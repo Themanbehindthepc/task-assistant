@@ -14,19 +14,14 @@ function createSafeClient() {
     );
   }
 
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-    },
-  });
+  return createClient(supabaseUrl, supabaseAnonKey);
 }
 
 export const supabase = createSafeClient();
 
 export type Task = {
   id: string;
-  user_id: string;
+  owner_name: string;
   title: string;
   priority: 'low' | 'medium' | 'high';
   category: string;

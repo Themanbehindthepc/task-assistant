@@ -1,10 +1,10 @@
 import { supabase, Task } from './supabase';
 
-export async function fetchTasks(userId: string): Promise<Task[]> {
+export async function fetchTasks(ownerName: string): Promise<Task[]> {
   const { data, error } = await supabase
     .from('tasks')
     .select('*')
-    .eq('user_id', userId)
+    .eq('owner_name', ownerName)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
@@ -12,12 +12,12 @@ export async function fetchTasks(userId: string): Promise<Task[]> {
 }
 
 export async function createTask(
-  userId: string,
-  task: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at'>
+  ownerName: string,
+  task: Omit<Task, 'id' | 'owner_name' | 'created_at' | 'updated_at'>
 ): Promise<Task> {
   const { data, error } = await supabase
     .from('tasks')
-    .insert([{ ...task, user_id: userId }])
+    .insert([{ ...task, owner_name: ownerName }])
     .select()
     .single();
 
@@ -28,7 +28,7 @@ export async function createTask(
 
 export async function updateTask(
   id: string,
-  updates: Partial<Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at'>>
+  updates: Partial<Omit<Task, 'id' | 'owner_name' | 'created_at' | 'updated_at'>>
 ): Promise<Task> {
   const { data, error } = await supabase
     .from('tasks')

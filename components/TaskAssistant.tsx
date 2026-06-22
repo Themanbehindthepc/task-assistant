@@ -1,8 +1,7 @@
 'use client';
 
-import { User } from '@supabase/supabase-js';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { supabase, Task } from '@/lib/supabase';
+import { Task } from '@/lib/supabase';
 import { advanceDate, createTask, deleteTask, fetchTasks, updateTask } from '@/lib/tasks';
 import Auth from './Auth';
 
@@ -16,7 +15,7 @@ type View = 'all' | 'focus' | 'dashboard';
 type Filters = { status: string; category: string; priority: string };
 
 export function TaskAssistant() {
-  const [user, setUser] = useState<User | null | undefined>(undefined);
+  const [ownerName, setOwnerName] = useState<string | null | undefined>(undefined);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<View>('all');
@@ -32,30 +31,23 @@ export function TaskAssistant() {
   const editDialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
-
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
+    const stored = typeof window !== 'undefined' ? window.localStorage.getItem('taskAssistant.ownerName') : null;
+    setOwnerName(stored);
   }, []);
 
   useEffect(() => {
-    if (user === undefined) return;
-    if (!user) {
+    if (ownerName === undefined) return;
+    if (!ownerName) {
       setLoading(false);
       return;
     }
 
     setLoading(true);
-    fetchTasks(user.id)
+    fetchTasks(ownerName)
       .then(setTasks)
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [user]);
+  }, [ownerName]);
 
   useEffect(() => {
     if (editingTask) {
@@ -64,6 +56,17 @@ export function TaskAssistant() {
       editDialogRef.current?.close();
     }
   }, [editingTask]);
+
+  function handleStart(name: string) {
+    window.localStorage.setItem('taskAssistant.ownerName', name);
+    setOwnerName(name);
+  }
+
+  function handleSwitchUser() {
+    window.localStorage.removeItem('taskAssistant.ownerName');
+    setOwnerName(null);
+    setTasks([]);
+  }
 
   function todayString() {
     return new Date().toISOString().slice(0, 10);
@@ -177,7 +180,7 @@ export function TaskAssistant() {
 
   async function handleAddTask(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!user || saving) return;
+    if (!ownerName || saving) return;
     const form = event.currentTarget;
     const formData = new FormData(form);
     const title = String(formData.get('title') || '').trim();
@@ -186,7 +189,7 @@ export function TaskAssistant() {
     setSaving(true);
     setError('');
     try {
-      const newTask = await createTask(user.id, {
+      const newTask = await createTask(ownerName, {
         title,
         priority: String(formData.get('priority') || 'medium') as Task['priority'],
         category: String(formData.get('category') || 'Other'),
@@ -206,11 +209,11 @@ export function TaskAssistant() {
   }
 
   async function handleComplete(task: Task, completed: boolean) {
-    if (!user) return;
+    if (!ownerName) return;
     setError('');
     try {
       if (completed && task.recurrence !== 'none' && task.due_date) {
-        const nextTask = await createTask(user.id, {
+        const nextTask = await createTask(ownerName, {
           title: task.title,
           priority: task.priority,
           category: task.category,
@@ -267,11 +270,7 @@ export function TaskAssistant() {
     }
   }
 
-  async function handleSignOut() {
-    await supabase.auth.signOut();
-  }
-
-  if (user === undefined || loading) {
+  if (ownerName === undefined) {
     return (
       <div className="loading-screen">
         <span>Loading…</span>
@@ -279,8 +278,16 @@ export function TaskAssistant() {
     );
   }
 
-  if (!user) {
-    return <Auth />;
+  if (!ownerName) {
+    return <Auth onStart={handleStart} />;
+  }
+
+  if (loading) {
+    return (
+      <div className="loading-screen">
+        <span>Loading tasks…</span>
+      </div>
+    );
   }
 
   const activeCount = filteredTasks.filter((t) => !t.completed).length;
@@ -295,9 +302,9 @@ export function TaskAssistant() {
             <span>Task Assistant</span>
           </a>
           <div className="user-menu">
-            <span className="user-email" title={user.email}>{user.email}</span>
-            <button type="button" className="btn btn-ghost" onClick={handleSignOut}>
-              Sign out
+            <span className="user-email" title={ownerName}>{ownerName}</span>
+            <button type="button" className="btn btn-ghost" onClick={handleSwitchUser}>
+              Switch user
             </button>
           </div>
         </div>
@@ -534,9 +541,7 @@ export function TaskAssistant() {
                     cx="60"
                     cy="60"
                     r="54"
-                    style={{
-                      strokeDashoffset: CIRCUMFERENCE - (CIRCUMFERENCE * stats.completionRate) / 100,
-                    }}
+                    style={{ strokeDashoffset: CIRCUMFERENCE - (CIRCUMFERENCE * stats.completionRate) / 100 }}
                   ></circle>
                 </svg>
                 <div className="progress-text">
@@ -636,8 +641,7 @@ export function TaskAssistant() {
 
       {editingTask && (
         <dialog ref={editDialogRef} className="edit-dialog" aria-labelledby="editDialogTitle">
-          <form onSubmit={handleEditSave} className="task-form" noValidate
-          >
+          <form onSubmit={handleEditSave} className="task-form" noValidate>
             <h2 id="editDialogTitle">Edit task</h2>
 
             <div className="form-row">
@@ -722,8 +726,9 @@ function TaskCard({
   onDelete: (id: string, title: string) => void;
   onEdit: (task: Task) => void;
 }) {
-  const overdue = !task.completed && task.due_date && new Date(task.due_date) < new Date(new Date().toISOString().slice(0, 10));
-  const dueToday = task.due_date === new Date().toISOString().slice(0, 10);
+  const today = new Date().toISOString().slice(0, 10);
+  const overdue = !task.completed && task.due_date && task.due_date < today;
+  const dueToday = task.due_date === today;
   const cardClass = ['task-card', task.completed ? 'completed' : '', overdue ? 'overdue' : dueToday ? 'due-today' : ''].filter(Boolean).join(' ');
 
   return (
