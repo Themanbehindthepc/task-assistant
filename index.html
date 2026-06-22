@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Assistant</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="#" class="logo" aria-label="Task Assistant home">
+                <span class="logo-mark">✓</span>
+                <span>Task Assistant</span>
+            </a>
+            <nav aria-label="Main views">
+                <ul class="view-tabs" role="tablist">
+                    <li>
+                        <button id="tab-all" class="tab-btn active" role="tab" aria-selected="true" aria-controls="view-all" data-view="all">
+                            All Tasks
+                        </button>
+                    </li>
+                    <li>
+                        <button id="tab-focus" class="tab-btn" role="tab" aria-selected="false" aria-controls="view-focus" data-view="focus">
+                            Focus Today
+                        </button>
+                    </li>
+                    <li>
+                        <button id="tab-dashboard" class="tab-btn" role="tab" aria-selected="false" aria-controls="view-dashboard" data-view="dashboard">
+                            Dashboard
+                        </button>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="assistant-banner" id="assistantBanner" aria-live="polite" aria-atomic="true">
+            <p class="banner-text" id="bannerText">Loading your tasks…</p>
+        </section>
+
+        <section class="task-form-section" id="taskFormSection">
+            <button type="button" class="btn btn-secondary btn-toggle-form" id="toggleFormBtn" aria-expanded="false" aria-controls="addTaskForm">
+                + New Task
+            </button>
+
+            <form id="addTaskForm" class="task-form collapsed" novalidate>
+                <div class="form-row">
+                    <div class="form-field field-title">
+                        <label for="taskTitle">Task title <span aria-label="required">*</span></label>
+                        <input type="text" id="taskTitle" name="title" required placeholder="What do you need to do?" autocomplete="off">
+                    </div>
+
+                    <div class="form-field field-priority">
+                        <label for="taskPriority">Priority</label>
+                        <select id="taskPriority" name="priority">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+
+                    <div class="form-field field-category">
+                        <label for="taskCategory">Category</label>
+                        <select id="taskCategory" name="category">
+                            <option value="Work">Work</option>
+                            <option value="Personal">Personal</option>
+                            <option value="Health">Health</option>
+                            <option value="Learning">Learning</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-field field-due">
+                        <label for="taskDueDate">Due date</label>
+                        <input type="date" id="taskDueDate" name="dueDate">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-field field-note">
+                        <label for="taskNote">Note</label>
+                        <textarea id="taskNote" name="note" rows="2" placeholder="Any extra details…"></textarea>
+                    </div>
+
+                    <div class="form-field field-recurrence">
+                        <label for="taskRecurrence">Repeat</label>
+                        <select id="taskRecurrence" name="recurrence">
+                            <option value="none" selected>None</option>
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Add Task</button>
+                    <button type="button" class="btn btn-ghost" id="cancelFormBtn">Cancel</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="toolbar" id="toolbar">
+            <div class="search-field">
+                <label for="searchInput" class="visually-hidden">Search tasks</label>
+                <input type="search" id="searchInput" placeholder="Search tasks…" autocomplete="off">
+            </div>
+
+            <div class="filters">
+                <div class="filter-group filter-group-status">
+                    <label for="filterStatus" class="visually-hidden">Filter by status</label>
+                    <select id="filterStatus">
+                        <option value="all">All statuses</option>
+                        <option value="active">Active</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                </div>
+
+                <div class="filter-group filter-group-category">
+                    <label for="filterCategory" class="visually-hidden">Filter by category</label>
+                    <select id="filterCategory">
+                        <option value="all">All categories</option>
+                    </select>
+                </div>
+
+                <div class="filter-group filter-group-priority">
+                    <label for="filterPriority" class="visually-hidden">Filter by priority</label>
+                    <select id="filterPriority">
+                        <option value="all">All priorities</option>
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                    </select>
+                </div>
+
+                <div class="filter-group filter-group-sort">
+                    <label for="sortBy" class="visually-hidden">Sort by</label>
+                    <select id="sortBy">
+                        <option value="dueDate">Due date</option>
+                        <option value="priority">Priority</option>
+                        <option value="createdAt">Created</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-all" class="view active" role="tabpanel" aria-labelledby="tab-all">
+            <div class="section-header">
+                <h1>All Tasks</h1>
+                <p class="section-subtitle" id="allSubtitle">0 tasks</p>
+            </div>
+            <ul class="task-list" id="taskList" role="list"></ul>
+            <div class="empty-state" id="emptyStateAll">
+                <p>No tasks yet. Add your first task above.</p>
+            </div>
+        </section>
+
+        <section id="view-focus" class="view" role="tabpanel" aria-labelledby="tab-focus" hidden>
+            <div class="section-header">
+                <h1>Focus Today</h1>
+                <p class="section-subtitle" id="focusSubtitle">Tasks due today and high-priority items</p>
+            </div>
+            <ul class="task-list" id="focusTaskList" role="list"></ul>
+            <div class="empty-state" id="emptyStateFocus">
+                <p>Nothing urgent today. Great job!</p>
+            </div>
+        </section>
+
+        <section id="view-dashboard" class="view" role="tabpanel" aria-labelledby="tab-dashboard" hidden>
+            <div class="section-header">
+                <h1>Dashboard</h1>
+                <p class="section-subtitle">Your productivity at a glance</p>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-label">Total</span>
+                    <strong class="stat-value" id="statTotal">0</strong>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Completed</span>
+                    <strong class="stat-value" id="statCompleted">0</strong>
+                </div>
+                <div class="stat-card highlight">
+                    <span class="stat-label">Overdue</span>
+                    <strong class="stat-value" id="statOverdue">0</strong>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Due today</span>
+                    <strong class="stat-value" id="statDueToday">0</strong>
+                </div>
+            </div>
+
+            <div class="dashboard-charts">
+                <div class="chart-card">
+                    <h2>Completion rate</h2>
+                    <div class="progress-ring" id="progressRing">
+                        <svg viewBox="0 0 120 120" aria-hidden="true">
+                            <circle class="progress-track" cx="60" cy="60" r="54"></circle>
+                            <circle class="progress-fill" id="progressFill" cx="60" cy="60" r="54"></circle>
+                        </svg>
+                        <div class="progress-text">
+                            <strong id="progressPercent">0%</strong>
+                            <span>done</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <h2>By category</h2>
+                    <ul class="category-list" id="categoryStats" role="list"></ul>
+                </div>
+
+                <div class="chart-card">
+                    <h2>By priority</h2>
+                    <ul class="priority-list" id="priorityStats" role="list"></ul>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <p>Task Assistant — your data stays in this browser.</p>
+    </footer>
+
+    <dialog class="edit-dialog" id="editDialog" aria-labelledby="editDialogTitle">
+        <form id="editTaskForm" class="task-form" method="dialog" novalidate>
+            <h2 id="editDialogTitle">Edit task</h2>
+            <input type="hidden" id="editTaskId" name="id">
+
+            <div class="form-row">
+                <div class="form-field field-title">
+                    <label for="editTaskTitle">Task title <span aria-label="required">*</span></label>
+                    <input type="text" id="editTaskTitle" name="title" required placeholder="What do you need to do?" autocomplete="off">
+                </div>
+
+                <div class="form-field field-priority">
+                    <label for="editTaskPriority">Priority</label>
+                    <select id="editTaskPriority" name="priority">
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-field field-category">
+                    <label for="editTaskCategory">Category</label>
+                    <select id="editTaskCategory" name="category">
+                        <option value="Work">Work</option>
+                        <option value="Personal">Personal</option>
+                        <option value="Health">Health</option>
+                        <option value="Learning">Learning</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-field field-due">
+                    <label for="editTaskDueDate">Due date</label>
+                    <input type="date" id="editTaskDueDate" name="dueDate">
+                </div>
+
+                <div class="form-field field-recurrence">
+                    <label for="editTaskRecurrence">Repeat</label>
+                    <select id="editTaskRecurrence" name="recurrence">
+                        <option value="none">None</option>
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-field field-note">
+                <label for="editTaskNote">Note</label>
+                <textarea id="editTaskNote" name="note" rows="3" placeholder="Any extra details…"></textarea>
+            </div>
+
+            <div class="dialog-actions">
+                <button type="submit" class="btn btn-primary">Save changes</button>
+                <button type="button" class="btn btn-ghost" id="closeEditDialog">Cancel</button>
+            </div>
+        </form>
+    </dialog>
+
+    <script src="storage.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
