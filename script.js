@@ -24,6 +24,8 @@
         addTaskForm: document.getElementById('addTaskForm'),
         toggleFormBtn: document.getElementById('toggleFormBtn'),
         cancelFormBtn: document.getElementById('cancelFormBtn'),
+        toolbar: document.getElementById('toolbar'),
+        taskFormSection: document.getElementById('taskFormSection'),
         searchInput: document.getElementById('searchInput'),
         filterStatus: document.getElementById('filterStatus'),
         filterCategory: document.getElementById('filterCategory'),
